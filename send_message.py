@@ -1,12 +1,13 @@
 import asyncio
 import socket
-import time
 import logging
+import json
+from util import set_keepalive_linux, set_keepalive_win
 
 import configargparse
 from dotenv import load_dotenv
 
-USER_TOKEN = "291f0cba-1e7d-11ea-b989-0242ac110002"
+
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 ch = logging.StreamHandler()
@@ -19,59 +20,72 @@ logger.addHandler(ch)
 async def get_message(reader):
     data = await reader.readline()
     decoded_data = data.decode()
-    # print(decoded_data)
+    logger.debug(decoded_data.strip())
     return decoded_data
 
 
 async def connect(addr, port):
     sock = socket.create_connection((addr, port))
-    sock.ioctl(socket.SIO_KEEPALIVE_VALS, (1, 10000, 3000))
+    # set_keepalive_win(sock)
+    set_keepalive_linux(sock)
     return await asyncio.open_connection(sock=sock)
 
 
-async def auth(token, writer):
-    encoded_message = token.encode() + b"\n"
-    logger.debug(encoded_message)
-    writer.write(encoded_message)
-    await writer.drain()
+async def authorize(addr, token):
+    reader, writer = addr
+    await get_message(reader)
+    await send_message(token, writer)
+    auth_resp = await get_message(reader)
+
+    json_data = json.loads(auth_resp)
+    if json_data:
+        print(f"Auth success for name {json_data['nickname']}")
+        return True
+    else:
+        print(f"Token is invalid. Try it or register new.")
+        return False
 
 
 async def send_message(message, writer):
-    encoded_message = message.encode() + b"\n\n"
+    encoded_message = f"{message}\n\n".encode()
     logger.debug(encoded_message)
     writer.write(encoded_message)
     await writer.drain()
 
 
-async def main(addr, port):
-    connection_attempts = 0
-    connection_timeout = 3
-    message = f"Connection lost! Retry through {connection_timeout} sec\n"
+async def register(addr, name):
+    reader, writer = addr
+    await get_message(reader)
+    await send_message(name, writer)
+    await get_message(reader)
+    data = await get_message(reader)
+    token = json.loads(data)
+    print(f"Save this token {token}. And login with it!")
+
+
+async def main(addr, port, token=None, nickname=None, message=None):
+    reader, writer = await connect(addr, port)
     while True:
-        try:
-            reader, writer = await connect(addr, port)
-            # await log_message("Connection established!\n")
-            connection_attempts = 0
-            while True:
-                data = await get_message(reader)
-                logger.debug(data)
-                if data.strip() == "Hello %username%! Enter your personal hash or leave it empty to create new account.":
-                    await auth(USER_TOKEN, writer)
-                elif data.strip() == "Welcome to chat! Post your message below. End it with an empty line.":
-                    await send_message("Test message Devman", writer)
-                # await log_message(data)
-        except (ConnectionRefusedError, ConnectionResetError, socket.gaierror):
-            # await log_message("Connection lost! Trying reconnect.\n" if connection_attempts < 2 else message)
-            if connection_attempts >= 2:
-                time.sleep(connection_timeout)
-            connection_attempts += 1
+        if token:
+            status = await authorize((reader, writer), token)
+            if status:
+                await send_message(message, writer)
+                break
+            else:
+                return
+        else:
+            await register((reader, writer), nickname)
+            return
+
 
 if __name__ == '__main__':
-    # load_dotenv()
+    load_dotenv()
     config = configargparse.ArgParser()
     config.add_argument("--host", help="Chat server host", env_var="HOST")
-    config.add_argument("--port", help="Chat server port", env_var="PORT")
+    config.add_argument("--port", help="Chat server port", env_var="PORT_WRITE")
+    config.add_argument("--username", help="Username in chat", default="New user")
+    config.add_argument("--token", help="Chat user token")
+    config.add_argument("--message", help="Message to sent")
     config.add_argument("--log_file", help="Path to log file", env_var="LOG_FILE")
     options = config.parse_args()
-    print(config.format_values())
-    asyncio.run(main("minechat.dvmn.org", 5050))
+    asyncio.run(main(options.host, options.port, options.token, options.username, options.message))

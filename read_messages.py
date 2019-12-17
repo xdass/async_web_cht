@@ -1,33 +1,31 @@
 import asyncio
 import datetime
-import socket
 import time
-import json
+import socket
+from util import set_keepalive_linux
 
 import aiofiles
 import configargparse
 from dotenv import load_dotenv
 
-# {"nickname": "Naughty testJack", "account_hash": "291f0cba-1e7d-11ea-b989-0242ac110002"}
-
 
 async def log_message(message):
-    print(message)
     now = datetime.datetime.now()
     formatted_date = now.strftime("%d.%m.%Y %H:%M")
-    async with aiofiles.open("chat_log.txt", "a+", encoding="utf-8") as fh:
+    async with aiofiles.open(options.log_file, "a+", encoding="utf-8") as fh:
         await fh.write(f"[{formatted_date}] {message}")
 
 
 async def get_message(reader):
     data = await reader.readline()
     decoded_data = data.decode()
+    print(decoded_data)
     return decoded_data
 
 
 async def connect(addr, port):
     sock = socket.create_connection((addr, port))
-    sock.ioctl(socket.SIO_KEEPALIVE_VALS, (1, 10000, 3000))
+    set_keepalive_linux(sock)
     return await asyncio.open_connection(sock=sock)
 
 
@@ -38,7 +36,6 @@ async def main(addr, port):
     while True:
         try:
             reader, writer = await connect(addr, port)
-
             await log_message("Connection established!\n")
             connection_attempts = 0
             while True:
@@ -57,5 +54,4 @@ if __name__ == '__main__':
     config.add_argument("--port", help="Chat server port", env_var="PORT")
     config.add_argument("--log_file", help="Path to log file", env_var="LOG_FILE")
     options = config.parse_args()
-    print(config.format_values())
     asyncio.run(main(options.host, options.port))
