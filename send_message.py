@@ -47,7 +47,8 @@ async def authorize(addr, token):
 
 
 async def send_message(message, writer):
-    encoded_message = f"{message}\n\n".encode()
+    # TODO отправка сообщения использует два символа переноса строки
+    encoded_message = f"{message}\n".encode()
     logger.debug(encoded_message)
     writer.write(encoded_message)
     await writer.drain()
@@ -56,8 +57,9 @@ async def send_message(message, writer):
 async def register(addr, name):
     reader, writer = addr
     await get_message(reader)
-    await send_message(name, writer)
+    await send_message("", writer)
     await get_message(reader)
+    await send_message(name, writer)
     data = await get_message(reader)
     token = json.loads(data)
     print(f"Save this token {token}. And login with it!")
