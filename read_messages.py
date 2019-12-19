@@ -39,7 +39,8 @@ async def main(addr, port):
             await log_message("Connection established!\n")
             connection_attempts = 0
             while True:
-                await get_message(reader)
+                message = await get_message(reader)
+                print(message)
         except (ConnectionRefusedError, ConnectionResetError, socket.gaierror):
             await log_message("Connection lost! Trying reconnect.\n" if connection_attempts < 2 else message)
             if connection_attempts >= 2:
