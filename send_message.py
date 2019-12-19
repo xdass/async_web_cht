@@ -26,6 +26,8 @@ async def get_message(reader):
 
 async def connect(addr, port):
     sock = socket.create_connection((addr, port))
+    # Settings to debug Connection Reset and etc (See more in util.py).
+    # Use version depends on platform
     # set_keepalive_win(sock)
     set_keepalive_linux(sock)
     return await asyncio.open_connection(sock=sock)
@@ -34,7 +36,7 @@ async def connect(addr, port):
 async def authorize(addr, token):
     reader, writer = addr
     await get_message(reader)
-    await send_message(token, writer)
+    await send_message(writer, message=token)
     auth_resp = await get_message(reader)
 
     json_data = json.loads(auth_resp)
@@ -46,9 +48,11 @@ async def authorize(addr, token):
         return False
 
 
-async def send_message(message, writer):
-    # TODO отправка сообщения использует два символа переноса строки
-    encoded_message = f"{message}\n".encode()
+async def send_message(writer, message="", mtype='service'):
+    if mtype == 'message':
+        encoded_message = f"{message}\n\n".encode()
+    else:
+        encoded_message = f"{message}\n".encode()
     logger.debug(encoded_message)
     writer.write(encoded_message)
     await writer.drain()
@@ -57,9 +61,9 @@ async def send_message(message, writer):
 async def register(addr, name):
     reader, writer = addr
     await get_message(reader)
-    await send_message("", writer)
+    await send_message(writer)
     await get_message(reader)
-    await send_message(name, writer)
+    await send_message(writer, message=name)
     data = await get_message(reader)
     token = json.loads(data)
     print(f"Save this token {token}. And login with it!")
@@ -71,8 +75,8 @@ async def main(addr, port, token=None, nickname=None, message=None):
         if token:
             status = await authorize((reader, writer), token)
             if status:
-                await send_message(message, writer)
-                break
+                await send_message(writer, message=message, mtype="message")
+                return
             else:
                 return
         else:

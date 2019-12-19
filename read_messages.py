@@ -19,7 +19,7 @@ async def log_message(message):
 async def get_message(reader):
     data = await reader.readline()
     decoded_data = data.decode()
-    print(decoded_data)
+    await log_message(decoded_data)
     return decoded_data
 
 
@@ -39,8 +39,7 @@ async def main(addr, port):
             await log_message("Connection established!\n")
             connection_attempts = 0
             while True:
-                data = await get_message(reader)
-                await log_message(data)
+                await get_message(reader)
         except (ConnectionRefusedError, ConnectionResetError, socket.gaierror):
             await log_message("Connection lost! Trying reconnect.\n" if connection_attempts < 2 else message)
             if connection_attempts >= 2:
