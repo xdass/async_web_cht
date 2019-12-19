@@ -2,7 +2,10 @@ import socket
 
 
 def set_keepalive_linux(sock, after_idle_sec=1, interval_sec=3, max_fails=3):
-    """Set TCP keepalive on an open socket.
+    """
+    https://stackoverflow.com/questions/12248132/how-to-change-tcp-keepalive-timer-using-python-script
+
+    Set TCP keepalive on an open socket.
 
     It activates after 1 second (after_idle_sec) of idleness,
     then sends a keepalive ping once every 3 seconds (interval_sec),
@@ -14,5 +17,11 @@ def set_keepalive_linux(sock, after_idle_sec=1, interval_sec=3, max_fails=3):
     sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, max_fails)
 
 
-def set_keepalive_win(sock):
-    sock.ioctl(socket.SIO_KEEPALIVE_VALS, (1, 10000, 3000))
+def set_keepalive_win(sock, keep_alive_time=10000, keep_alive_interval=3000):
+    """
+    The keepalivetime member specifies the timeout, in milliseconds,
+    with no activity until the first keep-alive packet is sent.
+    The keepaliveinterval member specifies the interval,
+     in milliseconds, between when successive keep-alive packets are sent if no acknowledgement is received.
+    """
+    sock.ioctl(socket.SIO_KEEPALIVE_VALS, (1, keep_alive_time, keep_alive_interval))

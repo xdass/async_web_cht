@@ -1,5 +1,4 @@
-# Микросервис для скачивания файлов
-Клиенты для чата minechat.
+# Клиенты для чата minechat
 Доступно 2-клиента:
  * read_messages.py - клиент для чтения сообщений из чата, поддерживает реконет при обрыве соединения,логирование сообщений в файл
  * send_message - клиент с возможностью регистрации нового пользователя
@@ -38,7 +37,7 @@ Eva: Ты не человек. Ты — искусственный интелл�
 ***
 Вход через ТОКЕН
 ```bash
- python send_message.py --token 'YOUR_TOKEN' --message 'ТЕСТОВОЕ СООБЩЕНИЕ'
+python send_message.py --token 'YOUR_TOKEN' --message 'ТЕСТОВОЕ СООБЩЕНИЕ'
 
 DEBUG:root:Hello %username%! Enter your personal hash or leave it empty to create new account.
 DEBUG:root:b'YOUR_TOKEN\n\n'
@@ -48,14 +47,15 @@ DEBUG:root:b'\xd0\xa2\xd0\xb5\xd1\x81\xd1\x82\xd0\xbe\xd0\xb2\xd0\xbe\xd0\xb5 \x
 
 .......
 ```
-Создание нового пользователя
+Создание нового пользователя(если в параметрах не указан nickname по умолчанию используется New User)
 ```
 python send_message.py
 DEBUG:root:Hello %username%! Enter your personal hash or leave it empty to create new account.
-DEBUG:root:b'\n\n\n'
+DEBUG:root:b'\n'
 DEBUG:root:Enter preferred nickname below:
-DEBUG:root:{"nickname": "Wonderful ", "account_hash": "a425beb2-20bd-11ea-b989-0242ac110002"}
-Save this token {'nickname': 'Wonderful ', 'account_hash': 'a425beb2-20bd-11ea-b989-0242ac110002'}. And login with it!
+DEBUG:root:b'New user\n'
+DEBUG:root:{"nickname": "Boring New user", "account_hash": "YOUR_TOKEN"}
+Save this token {'nickname': 'Boring New user', 'account_hash': 'YOUR_TOKEN'}. And login with it!
 
 ```
 
