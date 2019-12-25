@@ -41,11 +41,9 @@ async def authorize(addr, token):
 
     json_data = json.loads(auth_resp)
     if json_data:
-        print(f"Auth success for name {json_data['nickname']}")
-        return True
+        return json_data['nickname']
     else:
-        print(f"Token is invalid. Try it or register new.")
-        return False
+        return None
 
 
 async def send_message(writer, message="", mtype='service'):
@@ -66,21 +64,25 @@ async def register(addr, name):
     await send_message(writer, message=name)
     data = await get_message(reader)
     token = json.loads(data)
-    print(f"Save this token {token}. And login with it!")
+    return token
 
 
 async def main(addr, port, token=None, nickname=None, message=None):
     reader, writer = await connect(addr, port)
     while True:
         if token:
-            status = await authorize((reader, writer), token)
-            if status:
+            nickname = await authorize((reader, writer), token)
+            if nickname:
+                print(f"Auth success for name {nickname}")
                 await send_message(writer, message=message, mtype="message")
                 return
             else:
+                print(f"Token is invalid. Check it or register new.")
                 return
         else:
-            await register((reader, writer), nickname)
+            token = await register((reader, writer), nickname)
+            if token:
+                print(f"Save this token {token}. And login with it!")
             return
 
 
