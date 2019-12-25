@@ -47,10 +47,11 @@ async def authorize(addr, token):
 
 
 async def send_message(writer, message="", mtype='service'):
+    clean_message = message.replace("\\n", "")
     if mtype == 'message':
-        encoded_message = f"{message}\n\n".encode()
+        encoded_message = f"{clean_message}\n\n".encode()
     else:
-        encoded_message = f"{message}\n".encode()
+        encoded_message = f"{clean_message}\n".encode()
     logger.debug(encoded_message)
     writer.write(encoded_message)
     await writer.drain()
